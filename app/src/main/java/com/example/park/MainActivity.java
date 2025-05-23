@@ -4,13 +4,9 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
-import android.location.Location;
 import android.os.Bundle;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageButton;
-import android.widget.Toast;
-
+import android.util.Log;
+import android.widget.*;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,16 +15,12 @@ import androidx.fragment.app.FragmentManager;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.*;
+import com.google.android.gms.maps.model.*;
+import com.google.firebase.database.*;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
@@ -37,30 +29,25 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private ImageButton zoomInButton, zoomOutButton, myLocationButton, favoriteListButton;
     private FusedLocationProviderClient fusedLocationClient;
     private final List<String> favoriteList = new ArrayList<>();
-
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
+
+    DatabaseReference dbRef = FirebaseDatabase.getInstance().getReference();  // Realtime DB 참조
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // UI 요소 초기화
         addressEditText = findViewById(R.id.editText);
-
-        Button confirmButton = findViewById(R.id.button2); // 즐겨찾기 추가 버튼
+        Button confirmButton = findViewById(R.id.button2);
         ImageButton searchButton = findViewById(R.id.button_search);
-
-
         zoomInButton = findViewById(R.id.button_zoom_in);
         zoomOutButton = findViewById(R.id.button_zoom_out);
         myLocationButton = findViewById(R.id.button_my_location);
         favoriteListButton = findViewById(R.id.button_favorite_list);
 
-        // 위치 제공자 초기화
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
-        // 지도 프래그먼트 설정
         FragmentManager fragmentManager = getSupportFragmentManager();
         SupportMapFragment mapFragment = new SupportMapFragment();
         fragmentManager.beginTransaction()
@@ -68,7 +55,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .commit();
         mapFragment.getMapAsync(this);
 
-        // 즐겨찾기에 추가
         confirmButton.setOnClickListener(v -> {
             String address = addressEditText.getText().toString().trim();
             if (!address.isEmpty()) {
@@ -88,7 +74,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
 
-        // 즐겨찾기 목록 보기
         favoriteListButton.setOnClickListener(v -> {
             if (favoriteList.isEmpty()) {
                 Toast.makeText(MainActivity.this, "즐겨찾기가 비어 있습니다.", Toast.LENGTH_SHORT).show();
@@ -105,21 +90,18 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
 
-        // 확대 버튼
         zoomInButton.setOnClickListener(v -> {
             if (mMap != null) {
                 mMap.animateCamera(CameraUpdateFactory.zoomIn());
             }
         });
 
-        // 축소 버튼
         zoomOutButton.setOnClickListener(v -> {
             if (mMap != null) {
                 mMap.animateCamera(CameraUpdateFactory.zoomOut());
             }
         });
 
-        // 내 위치 버튼
         myLocationButton.setOnClickListener(v -> {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST_CODE);
@@ -129,9 +111,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             fusedLocationClient.getLastLocation().addOnSuccessListener(this, location -> {
                 if (location != null && mMap != null) {
                     LatLng myLatLng = new LatLng(location.getLatitude(), location.getLongitude());
-                    mMap.clear();
                     mMap.addMarker(new MarkerOptions().position(myLatLng).title("내 위치"));
-                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(myLatLng, 15));
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(myLatLng, 18));
                 } else {
                     Toast.makeText(MainActivity.this, "현재 위치를 가져올 수 없습니다.", Toast.LENGTH_SHORT).show();
                 }
@@ -146,9 +127,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             if (addresses != null && !addresses.isEmpty()) {
                 Address location = addresses.get(0);
                 LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                mMap.clear();
                 mMap.addMarker(new MarkerOptions().position(latLng).title(address));
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15));
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 18));
             } else {
                 Toast.makeText(MainActivity.this, "주소를 찾을 수 없습니다.", Toast.LENGTH_SHORT).show();
             }
@@ -161,9 +141,54 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        LatLng seoul = new LatLng(37.5665, 126.9780);
-        mMap.addMarker(new MarkerOptions().position(seoul).title("서울"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(seoul, 15));
+
+        // 지도 타입: HYBRID (건물과 도로 상세 보기 가능)
+        mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+
+        dbRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                for (DataSnapshot child : snapshot.getChildren()) {
+                    String name = child.child("주차장_명").getValue(String.class);
+                    String type = child.child("유형").getValue(String.class);
+                    String address = child.child("소재지").getValue(String.class);
+                    String startDate = child.child("운영개시_일").getValue(String.class);
+                    String contractDate = child.child("계약_일").getValue(String.class);
+                    Long capacity = child.child("주차면_수").getValue(Long.class);
+
+                    Double latitude = child.child("위도").getValue(Double.class);
+                    Double longitude = child.child("경도").getValue(Double.class);
+
+                    if (latitude != null && longitude != null) {
+                        LatLng latLng = new LatLng(latitude, longitude);
+                        Log.d("LatLngCheck", "위도: " + latitude + ", 경도: " + longitude);
+
+                        String snippet = "주소: " + address +
+                                "\n유형: " + type +
+                                "\n주차면 수: " + capacity +
+                                "\n운영개시일: " + startDate +
+                                "\n계약일: " + contractDate;
+
+                        mMap.addMarker(new MarkerOptions()
+                                .position(latLng)
+                                .title(name)
+                                .snippet(snippet));
+                    }
+                }
+
+                // 지도 초기 위치 및 줌 조정 (충청권 중심)
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(36.35, 127.38), 18));
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(MainActivity.this, "데이터 로드 실패", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        mMap.setOnInfoWindowClickListener(marker -> {
+            Toast.makeText(this, marker.getTitle() + " 선택됨", Toast.LENGTH_SHORT).show();
+        });
     }
 
     @Override
