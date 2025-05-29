@@ -18,19 +18,21 @@
         android:theme="@style/Theme.Park"
         tools:targetApi="31">
 
-    <meta-data
-        android:name="com.google.android.geo.API_KEY"
-        android:value="AIzaSyB9MbdSe9q6mE4_XlZNv6nwUAVSH2WYnOg" />
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyDtgmca692FeGZ9PoXN8Upudn7nwMjc-F8" />
 
-    <activity
-        android:name=".MainActivity"
-        android:exported="true"
-        android:theme="@style/Theme.AppCompat.Light">
-        <intent-filter>
-            <action android:name="android.intent.action.MAIN" />
-            <category android:name="android.intent.category.LAUNCHER" />
-        </intent-filter>
-    </activity>
-</application>
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.Light">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
 
-    </manifest>
+        <activity android:name=".ParkingDetailActivity" />
+
+    </application>
+</manifest>

@@ -1,6 +1,7 @@
 package com.example.park;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
@@ -187,7 +188,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
 
         mMap.setOnInfoWindowClickListener(marker -> {
-            Toast.makeText(this, marker.getTitle() + " 선택됨", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(MainActivity.this, ParkingDetailActivity.class);
+            intent.putExtra("title", marker.getTitle());
+            intent.putExtra("snippet", marker.getSnippet());
+            startActivity(intent);
         });
     }
 
