@@ -10,7 +10,7 @@
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         android:layout_margin="8dp"
-        android:text="즐겨찾기"
+        android:text="주차장목록"
         android:backgroundTint="#0000F5"
         android:textColor="#FFFFFF" />
 

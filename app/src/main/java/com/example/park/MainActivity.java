@@ -29,10 +29,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private EditText addressEditText;
     private ImageButton zoomInButton, zoomOutButton, myLocationButton, favoriteListButton;
     private FusedLocationProviderClient fusedLocationClient;
-    private final List<String> favoriteList = new ArrayList<>();
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
 
     DatabaseReference dbRef = FirebaseDatabase.getInstance().getReference();  // Realtime DB 참조
+    DatabaseReference favoriteRef = dbRef.child("즐겨찾기");  // 즐겨찾기 노드 참조
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,7 +59,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         confirmButton.setOnClickListener(v -> {
             String address = addressEditText.getText().toString().trim();
             if (!address.isEmpty()) {
-                favoriteList.add(address);
+                // 즐겨찾기에 추가
+                addFavorite(address);
                 Toast.makeText(MainActivity.this, "즐겨찾기에 추가되었습니다.", Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(MainActivity.this, "주소를 입력해 주세요.", Toast.LENGTH_SHORT).show();
@@ -76,19 +77,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
 
         favoriteListButton.setOnClickListener(v -> {
-            if (favoriteList.isEmpty()) {
-                Toast.makeText(MainActivity.this, "즐겨찾기가 비어 있습니다.", Toast.LENGTH_SHORT).show();
-            } else {
-                String[] favoriteArray = favoriteList.toArray(new String[0]);
-                new AlertDialog.Builder(MainActivity.this)
-                        .setTitle("즐겨찾기 목록")
-                        .setItems(favoriteArray, (dialog, which) -> {
-                            String selectedAddress = favoriteArray[which];
-                            searchAddressAndMoveMap(selectedAddress);
-                        })
-                        .setNegativeButton("닫기", null)
-                        .show();
-            }
+            loadFavoriteList(); // 즐겨찾기 목록 불러오기
         });
 
         zoomInButton.setOnClickListener(v -> {
@@ -121,6 +110,60 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
+    // 즐겨찾기 추가 함수
+    private void addFavorite(String address) {
+        String key = favoriteRef.push().getKey();  // 고유 키 생성
+        if (key != null) {
+            favoriteRef.child(key).setValue(address);  // Firebase에 즐겨찾기 주소 저장
+        }
+    }
+
+    // 즐겨찾기 목록 불러오기
+    private void loadFavoriteList() {
+        favoriteRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (!snapshot.exists()) {
+                    Toast.makeText(MainActivity.this, "즐겨찾기가 없습니다.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                List<String> favoriteAddresses = new ArrayList<>();
+                for (DataSnapshot favoriteSnapshot : snapshot.getChildren()) {
+                    String address = favoriteSnapshot.getKey();  // 키는 주차장 이름
+                    Boolean isFavorite = favoriteSnapshot.getValue(Boolean.class);  // 값은 true/false
+
+                    // 값이 true일 경우만 즐겨찾기 목록에 추가
+                    if (isFavorite != null && isFavorite) {
+                        favoriteAddresses.add(address);
+                    }
+                }
+
+                // 즐겨찾기 목록을 AlertDialog로 표시
+                if (!favoriteAddresses.isEmpty()) {
+                    String[] favoriteArray = favoriteAddresses.toArray(new String[0]);
+                    new AlertDialog.Builder(MainActivity.this)
+                            .setTitle("즐겨찾기 목록")
+                            .setItems(favoriteArray, (dialog, which) -> {
+                                String selectedAddress = favoriteArray[which];
+                                searchAddressAndMoveMap(selectedAddress);
+                            })
+                            .setNegativeButton("닫기", null)
+                            .show();
+                } else {
+                    Toast.makeText(MainActivity.this, "즐겨찾기가 비어 있습니다.", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(MainActivity.this, "데이터를 불러오는 중 오류가 발생했습니다.", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+
+    // 즐겨찾기 목록에서 선택한 주차장 위치로 카메라만 이동
     private void searchAddressAndMoveMap(String address) {
         Geocoder geocoder = new Geocoder(MainActivity.this);
         try {
@@ -128,7 +171,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             if (addresses != null && !addresses.isEmpty()) {
                 Address location = addresses.get(0);
                 LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                mMap.addMarker(new MarkerOptions().position(latLng).title(address));
+
+                // 카메라만 해당 위치로 이동 (마커 추가 없음)
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 18));
             } else {
                 Toast.makeText(MainActivity.this, "주소를 찾을 수 없습니다.", Toast.LENGTH_SHORT).show();
@@ -139,6 +183,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
+
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
@@ -146,40 +191,44 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         // 지도 타입: HYBRID (건물과 도로 상세 보기 가능)
         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
 
+        // 주차장 데이터 로딩 예시 (Firebase에서 직접 주차장 정보를 가져오는 코드)
         dbRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 for (DataSnapshot child : snapshot.getChildren()) {
+                    // 주차장명, 주소, 위도, 경도 등은 String과 Double로 처리
                     String name = child.child("주차장_명").getValue(String.class);
-                    String type = child.child("유형").getValue(String.class);
                     String address = child.child("소재지").getValue(String.class);
-                    String startDate = child.child("운영개시_일").getValue(String.class);
-                    String contractDate = child.child("계약_일").getValue(String.class);
-                    Long capacity = child.child("주차면_수").getValue(Long.class);
-
                     Double latitude = child.child("위도").getValue(Double.class);
                     Double longitude = child.child("경도").getValue(Double.class);
+
+                    // 예시로 추가된 Boolean 타입 필드 처리
+                    Boolean someBooleanField = child.child("someBooleanField").getValue(Boolean.class);
+
+                    // Boolean 값을 String으로 안전하게 처리
+                    String booleanAsString = "false";  // 기본값
+                    if (someBooleanField != null) {
+                        booleanAsString = String.valueOf(someBooleanField);  // Boolean을 String으로 변환
+                    }
+
+                    Log.d("BooleanField", "Boolean 값: " + booleanAsString);  // 로그로 확인
 
                     if (latitude != null && longitude != null) {
                         LatLng latLng = new LatLng(latitude, longitude);
                         Log.d("LatLngCheck", "위도: " + latitude + ", 경도: " + longitude);
 
-                        String snippet = "주소: " + address +
-                                "\n유형: " + type +
-                                "\n주차면 수: " + capacity +
-                                "\n운영개시일: " + startDate +
-                                "\n계약일: " + contractDate;
-
+                        String snippet = "주소: " + address;
+                        BitmapDescriptor customIcon = BitmapDescriptorFactory.fromResource(R.drawable.ic_parking_marker);
                         mMap.addMarker(new MarkerOptions()
                                 .position(latLng)
                                 .title(name)
-                                .snippet(snippet));
+                                .snippet(snippet)
+                                .icon(customIcon));  // 아이콘 추가
                     }
                 }
-
-                // 지도 초기 위치 및 줌 조정 (충청권 중심)
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(36.35, 127.38), 18));
             }
+
+
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {

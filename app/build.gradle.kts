@@ -49,6 +49,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-firestore:24.9.0")
+    implementation ("com.google.firebase:firebase-auth:21.0.5")
 
     // ✅ Firebase Realtime Database 추가
     implementation("com.google.firebase:firebase-database:20.3.0")
