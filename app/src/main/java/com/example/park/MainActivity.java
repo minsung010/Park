@@ -162,7 +162,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
-
     // 즐겨찾기 목록에서 선택한 주차장 위치로 카메라만 이동
     private void searchAddressAndMoveMap(String address) {
         Geocoder geocoder = new Geocoder(MainActivity.this);
@@ -183,7 +182,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
-
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
@@ -196,38 +194,55 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 for (DataSnapshot child : snapshot.getChildren()) {
-                    // 주차장명, 주소, 위도, 경도 등은 String과 Double로 처리
                     String name = child.child("주차장_명").getValue(String.class);
                     String address = child.child("소재지").getValue(String.class);
+
+                    // 위도, 경도 값은 Double로 가져옴
                     Double latitude = child.child("위도").getValue(Double.class);
                     Double longitude = child.child("경도").getValue(Double.class);
 
-                    // 예시로 추가된 Boolean 타입 필드 처리
-                    Boolean someBooleanField = child.child("someBooleanField").getValue(Boolean.class);
-
-                    // Boolean 값을 String으로 안전하게 처리
-                    String booleanAsString = "false";  // 기본값
-                    if (someBooleanField != null) {
-                        booleanAsString = String.valueOf(someBooleanField);  // Boolean을 String으로 변환
-                    }
-
-                    Log.d("BooleanField", "Boolean 값: " + booleanAsString);  // 로그로 확인
+                    // 계약일, 운영 시작일 등을 Long 타입으로 저장했다면 이를 String으로 변환
+                    String contractDate = getStringValue(child.child("계약일"));
+                    String operationStartDate = getStringValue(child.child("운영_시작일"));
+                    String type = getStringValue(child.child("유형"));
+                    String spaces = getStringValue(child.child("주차면_수"));
 
                     if (latitude != null && longitude != null) {
                         LatLng latLng = new LatLng(latitude, longitude);
-                        Log.d("LatLngCheck", "위도: " + latitude + ", 경도: " + longitude);
 
                         String snippet = "주소: " + address;
                         BitmapDescriptor customIcon = BitmapDescriptorFactory.fromResource(R.drawable.ic_parking_marker);
-                        mMap.addMarker(new MarkerOptions()
+                        Marker marker = mMap.addMarker(new MarkerOptions()
                                 .position(latLng)
                                 .title(name)
                                 .snippet(snippet)
-                                .icon(customIcon));  // 아이콘 추가
+                                .icon(customIcon));
+
+                        // 마커 클릭 시 상세 화면으로 이동
+                        mMap.setOnInfoWindowClickListener(markerClicked -> {
+                            // 마커 클릭 시 Intent로 상세정보 전달
+                            Intent intent = new Intent(MainActivity.this, ParkingDetailActivity.class);
+                            intent.putExtra("title", markerClicked.getTitle());
+                            intent.putExtra("snippet", markerClicked.getSnippet());
+                            intent.putExtra("address", address);
+                            intent.putExtra("contract_date", contractDate);
+                            intent.putExtra("operation_start_date", operationStartDate);
+                            intent.putExtra("type", type);
+                            intent.putExtra("spaces", spaces);
+                            startActivity(intent);  // ParkingDetailActivity로 이동
+                        });
                     }
                 }
             }
 
+            // Long 타입을 String으로 변환하는 함수
+            private String getStringValue(DataSnapshot dataSnapshot) {
+                if (dataSnapshot.getValue() instanceof Long) {
+                    return String.valueOf(dataSnapshot.getValue(Long.class));
+                } else {
+                    return dataSnapshot.getValue(String.class);
+                }
+            }
 
 
             @Override
@@ -235,14 +250,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 Toast.makeText(MainActivity.this, "데이터 로드 실패", Toast.LENGTH_SHORT).show();
             }
         });
-
-        mMap.setOnInfoWindowClickListener(marker -> {
-            Intent intent = new Intent(MainActivity.this, ParkingDetailActivity.class);
-            intent.putExtra("title", marker.getTitle());
-            intent.putExtra("snippet", marker.getSnippet());
-            startActivity(intent);
-        });
     }
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
