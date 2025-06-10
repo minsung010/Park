@@ -2,76 +2,105 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="24dp">
+    android:padding="16dp"
+    android:background="#F5F5F5">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="16dp">
 
         <!-- 주차장명 표시 -->
         <TextView
             android:id="@+id/title"
-            android:textSize="20sp"
+            android:textSize="22sp"
             android:textStyle="bold"
+            android:textColor="#0000F5"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:shadowColor="#000000"
+            android:shadowRadius="4"
+            android:shadowDx="2"
+            android:shadowDy="2"
+            android:text="주차장명" />
 
         <!-- 주차장 설명 (주소) 표시 -->
         <TextView
             android:id="@+id/content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="8dp"
             android:textSize="16sp"
+            android:textColor="#333333"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:text="주차장 설명 (주소)" />
 
         <!-- 주소 정보 표시 -->
         <TextView
             android:id="@+id/address"
             android:layout_marginTop="12dp"
             android:textSize="16sp"
+            android:textColor="#333333"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:text="주소" />
 
         <!-- 계약일 표시 -->
         <TextView
             android:id="@+id/contract_date"
             android:layout_marginTop="12dp"
             android:textSize="16sp"
+            android:textColor="#333333"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:text="계약일" />
 
         <!-- 운영 시작일 표시 -->
         <TextView
             android:id="@+id/operation_start_date"
             android:layout_marginTop="12dp"
             android:textSize="16sp"
+            android:textColor="#333333"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:text="운영 시작일" />
 
         <!-- 유형 표시 -->
         <TextView
             android:id="@+id/type"
             android:layout_marginTop="12dp"
             android:textSize="16sp"
+            android:textColor="#333333"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:text="유형" />
 
         <!-- 주차면 수 표시 -->
         <TextView
             android:id="@+id/spaces"
             android:layout_marginTop="12dp"
             android:textSize="16sp"
+            android:textColor="#333333"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:text="주차면 수" />
 
         <!-- 즐겨찾기 버튼 -->
         <Button
             android:id="@+id/favoriteButton"
             android:layout_marginTop="24dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:text="즐겨찾기 추가"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#0000F5"
+            android:layout_marginBottom="16dp"
+            android:padding="12dp"
+            android:textSize="16sp"
+            android:fontFamily="sans-serif-medium"
+            android:elevation="4dp"
+            android:layout_gravity="center_horizontal" />
 
     </LinearLayout>
 </ScrollView>
