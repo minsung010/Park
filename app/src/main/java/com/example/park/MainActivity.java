@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.*;
@@ -59,13 +60,22 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         confirmButton.setOnClickListener(v -> {
             String address = addressEditText.getText().toString().trim();
             if (!address.isEmpty()) {
-                // 즐겨찾기에 추가
-                addFavorite(address);
-                Toast.makeText(MainActivity.this, "즐겨찾기에 추가되었습니다.", Toast.LENGTH_SHORT).show();
+                // 구글 지도에서 길찾기 실행
+                Uri gmmIntentUri = Uri.parse("google.navigation:q=" + Uri.encode(address));
+                Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+                mapIntent.setPackage("com.google.android.apps.maps");
+
+                // 구글 지도가 설치되어 있는지 확인
+                if (mapIntent.resolveActivity(getPackageManager()) != null) {
+                    startActivity(mapIntent);
+                } else {
+                    Toast.makeText(MainActivity.this, "Google 지도 앱이 설치되어 있지 않습니다.", Toast.LENGTH_SHORT).show();
+                }
             } else {
                 Toast.makeText(MainActivity.this, "주소를 입력해 주세요.", Toast.LENGTH_SHORT).show();
             }
         });
+
 
         searchButton.setOnClickListener(v -> {
             String address = addressEditText.getText().toString().trim();

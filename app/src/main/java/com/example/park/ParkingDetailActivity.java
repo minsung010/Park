@@ -7,25 +7,32 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
 public class ParkingDetailActivity extends AppCompatActivity {
 
     private TextView titleView, contentView, addressView, contractDateView, operationStartDateView, typeView, spacesView;
     private Button favoriteButton;
-    private String parkingTitle;
+    private String parkingTitle, snippet, address, contractDate, operationStartDate, type, spaces;
+    private DatabaseReference databaseReference;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_parking_detail);
 
-        // Intent로 전달받은 정보 (주차장명)
+        // Firebase Database 참조 초기화
+        databaseReference = FirebaseDatabase.getInstance().getReference();
+
+        // Intent로 전달받은 정보
         parkingTitle = getIntent().getStringExtra("title");
-        String snippet = getIntent().getStringExtra("snippet");
-        String address = getIntent().getStringExtra("address");
-        String contractDate = getIntent().getStringExtra("contract_date");
-        String operationStartDate = getIntent().getStringExtra("operation_start_date");
-        String type = getIntent().getStringExtra("type");
-        String spaces = getIntent().getStringExtra("spaces");
+        snippet = getIntent().getStringExtra("snippet");
+        address = getIntent().getStringExtra("address");
+        contractDate = getIntent().getStringExtra("contract_date");
+        operationStartDate = getIntent().getStringExtra("operation_start_date");
+        type = getIntent().getStringExtra("type");
+        spaces = getIntent().getStringExtra("spaces");
 
         // UI 요소 초기화
         titleView = findViewById(R.id.title);
@@ -48,8 +55,27 @@ public class ParkingDetailActivity extends AppCompatActivity {
 
         // 즐겨찾기 버튼 클릭 시
         favoriteButton.setOnClickListener(v -> {
-            // Firebase에 주차장 즐겨찾기 상태 저장하는 로직 추가
-            Toast.makeText(ParkingDetailActivity.this, "즐겨찾기 기능 구현 예정", Toast.LENGTH_SHORT).show();
+            // Firebase의 '즐겨찾기' 경로에 접근
+            DatabaseReference favoritesRef = databaseReference.child("즐겨찾기");
+
+            // 즐겨찾기 목록에 해당 주차장이 이미 있는지 확인
+            favoritesRef.child(parkingTitle).get().addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    if (task.getResult().exists()) {
+                        // 이미 즐겨찾기 목록에 있으면 삭제
+                        favoritesRef.child(parkingTitle).removeValue();
+                        favoriteButton.setText("즐겨찾기 추가");
+                        Toast.makeText(ParkingDetailActivity.this, "즐겨찾기에서 제거되었습니다.", Toast.LENGTH_SHORT).show();
+                    } else {
+                        // 즐겨찾기 목록에 없으면 추가
+                        favoritesRef.child(parkingTitle).setValue(true);
+                        favoriteButton.setText("즐겨찾기 제거");
+                        Toast.makeText(ParkingDetailActivity.this, "즐겨찾기에 추가되었습니다.", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(ParkingDetailActivity.this, "Firebase 오류: " + task.getException(), Toast.LENGTH_SHORT).show();
+                }
+            });
         });
     }
 }
